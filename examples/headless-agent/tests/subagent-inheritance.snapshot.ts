@@ -53,7 +53,7 @@ async function seedReadOnlyParent(root: string, cwd: string): Promise<void> {
 }
 
 describe('parent-only override inheritance snapshot', () => {
-  it('confines a delegated child through the assembled headless app', async () => {
+  it('inherits parent confinement and the live request route through the assembled headless app', async () => {
     let cwd = ''
     const result = await runLoaderSmoke({
       label: 'subagent inheritance headless stream-json snapshot',
@@ -121,6 +121,9 @@ describe('parent-only override inheritance snapshot', () => {
         const context: NormalizeContext = { sessionIds: [sessionId, String(headerOf(child).id)], cwd }
         const normalizedParent = scrubRequestHeaders(normalizeSessionLog(parent, context))
         const normalizedChild = scrubRequestHeaders(normalizeSessionLog(child, context))
+        const liveRoute = '"config":{"provider":"snapshot-live","model":"snapshot-live-model"}'
+        expect(normalizedParent).toContain(liveRoute)
+        expect(normalizedChild).toContain(liveRoute)
         if (refreshing) {
           await writeFile(parentExpected, normalizedParent)
           await writeFile(childExpected, normalizedChild)

@@ -31,6 +31,8 @@ Follow-up authority comes from the exact live direct parent recorded in the chil
 
 Same-process requests, descriptors, results, and event payloads are trusted typed values borrowed as immutable. The service does not clone or freeze them; serialization and hostile-input validation belong at actual process, worker, persistence, and model boundaries.
 
+In-process child creation resolves inherited `provider`, `model`, and `maxTokens` at the delegation boundary from the parent's latest `request/header` config, falling back to the parent's creation options before any request header exists. Explicit per-child `agentOptions` override those inherited values. Continuable creation resolves that route once before its first await and reuses the same `AgentOptions` snapshot for both the durable descriptor and the materialized Agent, so a parent route switch cannot leave persistence and runtime on different child routes.
+
 ## Capabilities
 
 Start-time features are advertised in `provider.capabilities` because the service must reject an unsupported one-shot request before child creation:

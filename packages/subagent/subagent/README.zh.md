@@ -31,6 +31,8 @@ subagent seam 允许一个 agent（智能体）通过具名提供方把工作委
 
 同进程请求、描述符、结果和事件 payload 都是可信的类型值，并按不可变约定借用。服务不会克隆或冻结它们；序列化和不可信输入校验属于真实的进程、worker、持久化和模型边界。
 
+进程内 child 创建会在委派边界从 parent 最新的 `request/header` config 解析继承的 `provider`、`model` 与 `maxTokens`；如果尚不存在 request header，则回退到 parent 的创建选项。显式的逐 child `agentOptions` 会覆盖这些继承值。可继续创建会在第一次 await 之前只解析一次该路由，并让持久描述符与实际物化的 Agent 复用同一份 `AgentOptions` 快照，因此 parent 在会话中切换路由后，不会让持久化记录与运行时 child 落在不同路由上。
+
 ## 能力
 
 启动时功能通过 `provider.capabilities` 声明，因为服务必须在创建子 agent 前拒绝不受支持的一次性请求：

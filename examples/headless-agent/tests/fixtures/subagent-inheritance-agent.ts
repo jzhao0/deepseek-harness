@@ -21,5 +21,9 @@ export async function apply(ctx: Context): Promise<void> {
     resumeSessionId: 'subagent-inheritance-parent' as SessionId,
     agentOptions: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
   })
+  handle.agent.ctx.on('agent/request', async (_payload, next) => {
+    const config = await next()
+    return { ...config, provider: 'snapshot-live', model: 'snapshot-live-model' }
+  })
   ctx.effect(() => () => handle.dispose(), 'subagent-inheritance-agent.handle')
 }

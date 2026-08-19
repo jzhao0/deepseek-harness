@@ -45,7 +45,7 @@ async function setupWalled(script: Script): Promise<{ ctx: Context; parent: Agen
   await ctx.plugin(ToolFs)
   await ctx.plugin(ApprovalService)
   await ctx.plugin(AgentLoop, { agents: [] })
-  ctx.llm.registerAdapter(['mock'], new MockAdapter(script))
+  ctx.llm.registerAdapter(['mock', 'live'], new MockAdapter(script))
   const parent = ctx.agentLoop.create(
     SessionId('parent'),
     { provider: 'mock', model: 'mock' },
@@ -79,6 +79,50 @@ function toolResultTexts(agent: Agent): string[] {
 }
 
 describe('in-process policy inheritance', () => {
+  it('inherits the parent live request route instead of creation options', async () => {
+    const script: Script = [textResponse('child done')]
+    const { parent } = await setupWalled(script)
+
+    parent.session.append('request/header', {
+      header: { config: { provider: 'mock', model: 'mock', maxTokens: 1_024 } },
+      reason: 'initial',
+    })
+    parent.session.append('request/header', {
+      header: { config: { provider: 'live', model: 'live-model', maxTokens: 2_048 } },
+      reason: 'change',
+    })
+
+    expect(parent.options).toMatchObject({ provider: 'mock', model: 'mock' })
+    expect(parent.session.requestHeader()?.config).toMatchObject({
+      provider: 'live',
+      model: 'live-model',
+      maxTokens: 2_048,
+    })
+
+    const run = await startInProcessRun(spawnRequest(parent), {})
+    try {
+      await run.result
+      const child = run.localAgent as Agent
+
+      expect(child.options).toMatchObject({
+        provider: 'live',
+        model: 'live-model',
+        maxTokens: 2_048,
+      })
+
+      const request = child.session.events.find(
+        (event): event is SessionEvent<'request/header'> => event.type === 'request/header',
+      )
+      expect(request?.data.header.config).toMatchObject({
+        provider: 'live',
+        model: 'live-model',
+        maxTokens: 2_048,
+      })
+    } finally {
+      await run.dispose()
+    }
+  })
+
   it('records the parent sandbox override and the approval pin before publishing a spawn child', async () => {
     const script: Script = []
     const { ctx, parent } = await setupWalled(script)

@@ -48,7 +48,7 @@ async function setup(script: Script) {
   await ctx.plugin(SubagentRuntime)
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
   await ctx.plugin(SubagentFork, { providerName: 'fork' })
-  ctx.llm.registerAdapter(['mock'], new MockAdapter(script))
+  ctx.llm.registerAdapter(['mock', 'live'], new MockAdapter(script))
   const parent = ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
   return { ctx, parent }
 }
@@ -74,6 +74,47 @@ function policyEvents(events: readonly SessionEvent[]) {
 }
 
 describe('continuable policy inheritance', () => {
+  it('snapshots the parent live request route into the continuable child', { timeout: 20_000 }, async () => {
+    const { ctx, parent } = await setup([textResponse('child done')])
+
+    parent.session.append('request/header', {
+      header: { config: { provider: 'mock', model: 'mock', maxTokens: 1_024 } },
+      reason: 'initial',
+    })
+    parent.session.append('request/header', {
+      header: { config: { provider: 'live', model: 'live-model', maxTokens: 2_048 } },
+      reason: 'change',
+    })
+
+    expect(parent.options).toMatchObject({ provider: 'mock', model: 'mock' })
+    expect(parent.session.requestHeader()?.config).toMatchObject({
+      provider: 'live',
+      model: 'live-model',
+      maxTokens: 2_048,
+    })
+
+    const started = await ctx.subagents.startContinuable(startSpec(parent))
+    await waitNoActivation(ctx, started.childId)
+
+    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const descriptor = loaded.events.find(
+      (event): event is SessionEvent<'subagent/descriptor'> => event.type === 'subagent/descriptor',
+    )
+    const request = loaded.events.find(
+      (event): event is SessionEvent<'request/header'> => event.type === 'request/header',
+    )
+
+    expect(descriptor?.data).toMatchObject({
+      agentProvider: 'live',
+      agentModel: 'live-model',
+    })
+    expect(request?.data.header.config).toMatchObject({
+      provider: 'live',
+      model: 'live-model',
+      maxTokens: 2_048,
+    })
+  })
+
   it('seeds the parent sandbox override and pins approval to never', { timeout: 20_000 }, async () => {
     const { ctx, parent } = await setup([textResponse('child done')])
     setSandboxMode(parent.session, 'danger-full-access')
