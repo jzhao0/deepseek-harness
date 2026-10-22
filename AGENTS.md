@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## Change size and verification
+
+- Cosmetic UI, copy, icon, color, and control changes should modify the owning component directly and receive one focused visible check. They do not justify a new plugin, abstraction, fixture, probe, smoke harness, or full workspace test suite.
+- For runtime/plugin behavior, use existing focused tests. Expand only for identified regression risks or changed public contracts; avoid repeated retries and full CI after every incremental edit.
+- Preserve plugin/runtime interfaces, authentication, user data, secrets, and remote-operation safeguards. Do not make an unavailable service appear validated.
+
+
 DeepSeek Harness is a plugin-based agent harness on vendored Cordis: **everything is a plugin**. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; follow [docs/AGENTS.md](docs/AGENTS.md) for documentation.
 
 ## Pre-release stance: foundation over blast radius
