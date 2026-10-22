@@ -7,7 +7,7 @@
 - Preserve plugin/runtime interfaces, authentication, user data, secrets, and remote-operation safeguards. Do not make an unavailable service appear validated.
 
 
-DeepSeek Harness is a plugin-based agent harness on vendored Cordis: **everything is a plugin**. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; follow [docs/AGENTS.md](docs/AGENTS.md) for documentation.
+DeepSeek Harness is a plugin-based agent harness on vendored Cordis: **everything is a plugin**. Consult [docs/architecture.md](docs/architecture.md) when changing package architecture or lifecycle boundaries; local package fixes need only the relevant source and applicable instructions. Consult [docs/AGENTS.md](docs/AGENTS.md) when changing documentation contracts.
 
 ## Pre-release stance: foundation over blast radius
 
